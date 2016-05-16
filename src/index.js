@@ -1,23 +1,47 @@
-// Demo component
-// this is only example component
-// you can find tests in __test__ folder
-
 import React from 'react';
+import { EventEmitter } from 'fbemitter';
 
-class MyComponent extends React.Component {
-    componentDidMount() {
-        // some logic here - we only test if the method is called
-    }
-    render() {
-        return (
-            <div className="my-component">
-                <i className="icon-test"></i>
-                <i className="icon-test"></i>
-                <i className="icon-test"></i>
-                <button onClick={this.props.handleClick} type="button"></button>
-            </div>
-        )
-    }
+const emitter = new EventEmitter();
+const store = {
+  addListener: function(l) {
+    return emitter.addListener('change', l);
+  },
+  isOnline: function() {
+    return navigator.onLine;
+  }
 };
 
-export default MyComponent;
+function _listener() {
+  emitter.emit('change');
+}
+
+window.addEventListener('online', _listener);
+window.addEventListener('offline', _listener);
+
+function getState() {
+  return { isOnline: store.isOnline() };
+}
+
+class Indicator extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = getState();
+  }
+  componentDidMount() {
+    this.onChange = () => {
+      this.setState(getState());
+    };
+    this.token = store.addListener(this.onChange);
+  }
+  componentWillUnmount() {
+    this.token.remove();
+  }
+  render() {
+    const indicator = this.state.isOnline ? 'class-online' : 'class-offline';
+    return (
+      <span className={ indicator }></span>
+    )
+  }
+};
+
+export default Indicator;
